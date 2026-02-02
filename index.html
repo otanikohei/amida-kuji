@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>あみだくじ抽選</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#101a2f;
+      --text:#e6eefc;
+      --muted:#9fb2d8;
+      --accent:#7cc4ff;
+      --win:#ffd166;
+      --line:#3a4b72;
+      --laneH: 28px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #060b16 0%, var(--bg) 60%, #060b16 100%);
+      color: var(--text);
+    }
+    .btn{
+      appearance:none; border:0; cursor:pointer;
+      padding:10px 12px; border-radius: 12px;
+      background: rgba(124,196,255,.15);
+      color: var(--text);
+      border:1px solid rgba(124,196,255,.35);
+      font-weight: 800;
+      transition: transform .05s ease, background .15s ease, opacity .15s ease;
+      user-select:none;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.secondary{
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      color: var(--muted);
+      font-weight: 750;
+    }
+    .btn.success{
+      background: rgba(255,209,102,.14);
+      border:1px solid rgba(255,209,102,.28);
+    }
+    .btn:disabled{ opacity:.45; cursor:not-allowed; }
+
+    /* ===== Input Screen ===== */
+    .screen{
+      min-height: 100dvh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+    }
+    .card{
+      width: min(860px, 96vw);
+      background: rgba(16,26,47,.85);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    h1{
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      letter-spacing: .02em;
+    }
+    .small{ font-size:12px; color: var(--muted); }
+    textarea{
+      width: 100%;
+      height: min(55vh, 420px);
+      resize: vertical;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(8,12,24,.65);
+      color: var(--text);
+      padding:12px;
+      outline:none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      margin-top: 10px;
+    }
+    input[type="number"]{
+      width: 80px;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(8,12,24,.65);
+      color: var(--text);
+      outline:none;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      color: var(--muted);
+      font-size:12px;
+    }
+    .error{
+      color: #ff6b6b;
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+    }
+    .error.show{
+      display: block;
+    }
+
+    /* ===== Lottery Screen (fullscreen) ===== */
+    .full{
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, #050a14 0%, #091225 55%, #050a14 100%);
+      display:none;
+      z-index: 10;
+    }
+    .full.show{ display:block; }
+
+    .topbar{
+      position:absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      gap: 10px;
+      z-index: 20;
+      pointer-events:none; /* allow stage interaction by default */
+    }
+    .topbar .group{
+      display:flex;
+      gap:10px;
+      pointer-events:auto;
+    }
+    .topbar .title{
+      font-weight: 900;
+      letter-spacing: .02em;
+      color: rgba(230,238,252,.92);
+      font-size: 28px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.10);
+      pointer-events:auto;
+      max-width: 70vw;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stageWrap{
+      position:absolute;
+      inset: 0;
+      overflow: auto;
+      padding: 56px 12px 12px; /* leave room for topbar */
+    }
+    .stage{
+      position: relative;
+      width: max-content;
+      padding: 14px;
+      min-height: calc(100% - 14px);
+    }
+    canvas{
+      display:block;
+      border-radius: 14px;
+      background: rgba(6,9,18,.35);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .overlay{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      pointer-events:none;
+    }
+    .overlay .msg{
+      padding:10px 14px;
+      border-radius: 999px;
+      background: rgba(0,0,0,.45);
+      border:1px solid rgba(255,255,255,.14);
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: .03em;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .25s ease, transform .25s ease;
+      max-width: 92vw;
+      text-align:center;
+    }
+    .overlay.show .msg{ opacity: 1; transform: translateY(0); }
+
+    /* centered reveal button */
+    .centerAction{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index: 25;
+      pointer-events:none;
+    }
+    .centerAction .btn{
+      pointer-events:auto;
+      padding: 14px 18px;
+      font-size: 16px;
+      border-radius: 16px;
+      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+    }
+    .centerAction.hidden{ display:none; }
+
+    /* results modal */
+    .modal{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 30;
+      background: rgba(0,0,0,.40);
+      backdrop-filter: blur(6px);
+    }
+    .modal.show{ display:flex; }
+    .modalCard{
+      width: min(560px, 92vw);
+      border-radius: 18px;
+      background: rgba(16,26,47,.92);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 18px 55px rgba(0,0,0,.45);
+      padding: 16px;
+    }
+    .modalCard h2{
+      margin:0 0 10px 0;
+      font-size: 24px;
+      letter-spacing:.02em;
+    }
+    .winners{
+      display:flex;
+      flex-wrap: wrap;
+      gap:10px;
+      margin: 10px 0 14px;
+    }
+    .winner{
+      padding:14px 18px;
+      border-radius: 16px;
+      background: rgba(255,209,102,.12);
+      border:1px solid rgba(255,209,102,.28);
+      color: var(--text);
+      font-weight: 900;
+      letter-spacing: .02em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 30px;
+      line-height: 1.3;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== Input Screen ===== -->
+<section class="screen" id="inputScreen">
+  <div class="card">
+    <h1>参加者を貼り付け</h1>
+    <textarea id="bulkInput" placeholder="例:
+alice
+bob_smith
+maeda-kazutoshi"></textarea>
+    <div class="row">
+      <button class="btn" id="toLotteryBtn">抽選へ</button>
+      <button class="btn secondary" id="clearBtn">クリア</button>
+      <span class="pill"><span id="count">0</span> 名</span>
+      <span class="pill">当選: <input type="number" id="winCount" value="5" min="1" step="1"> 名</span>
+    </div>
+    <div class="error" id="errorMsg"></div>
+  </div>
+</section>
+
+<!-- ===== Lottery Screen (fullscreen) ===== -->
+<section class="full" id="lotteryScreen" aria-hidden="true">
+  <div class="topbar">
+    <div class="group">
+      <button class="btn" id="startBtn">スタート</button>
+      <button class="btn secondary" id="shuffleBtn">レーン再生成</button>
+    </div>
+    <div class="title" id="metaTitle">あみだくじ</div>
+    <div class="group">
+      <button class="btn secondary" id="backBtn">戻る</button>
+    </div>
+  </div>
+
+  <div class="stageWrap" id="stageWrap">
+    <div class="stage">
+      <canvas id="cv"></canvas>
+      <div class="overlay" id="overlay"><div class="msg" id="overlayMsg">準備中…</div></div>
+      <div class="centerAction hidden" id="centerAction">
+        <button class="btn success" id="revealBtn">結果発表</button>
+      </div>
+      <div class="modal" id="resultModal">
+        <div class="modalCard">
+          <h2>当選者</h2>
+          <div class="winners" id="winners"></div>
+          <div class="row" style="justify-content:flex-end; margin:0;">
+            <button class="btn secondary" id="closeModalBtn">閉じる</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(() => {
+  // ===== state =====
+  const state = {
+    members: [],
+    winners: [],
+    pendingWinners: [],
+    revealed: false,
+    showWinnersOnBoard: false,
+
+    lanes: [],
+    connectors: [],
+    running: false,
+
+    // drawing config
+    laneH: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--laneH')) || 28,
+  };
+
+  // ===== elements =====
+  const inputScreen = document.getElementById('inputScreen');
+  const lotteryScreen = document.getElementById('lotteryScreen');
+
+  const bulkInput = document.getElementById('bulkInput');
+  const toLotteryBtn = document.getElementById('toLotteryBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const countEl = document.getElementById('count');
+
+  const startBtn = document.getElementById('startBtn');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+  const backBtn = document.getElementById('backBtn');
+
+  const stageWrap = document.getElementById('stageWrap');
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+
+  const overlay = document.getElementById('overlay');
+  const overlayMsg = document.getElementById('overlayMsg');
+
+  const centerAction = document.getElementById('centerAction');
+  const revealBtn = document.getElementById('revealBtn');
+
+  const resultModal = document.getElementById('resultModal');
+  const winnersEl = document.getElementById('winners');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const metaTitle = document.getElementById('metaTitle');
+  const winCountInput = document.getElementById('winCount');
+  const errorMsg = document.getElementById('errorMsg');
+
+  // ===== config =====
+  let WINNERS_N = 5;
+  const leftPad = 220;
+  const topPad = 24;
+  const rightPad = 110;
+  const minW = 880;
+  const stepX = 140;
+  const cols = 9;
+  const barChance = 0.35;
+  const barMinGap = 1;
+  const scrollPreviewMs = 1600;
+  const scrollEdgePad = 30;
+
+  // ===== helpers =====
+  const uniq = (arr) => Array.from(new Set(arr));
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+  function setOverlay(text, show=true){
+    overlayMsg.textContent = text;
+    overlay.classList.toggle('show', show);
+  }
+  function showCenterReveal(show){
+    centerAction.classList.toggle('hidden', !show);
+    revealBtn.disabled = !show;
+  }
+  function showModal(show){
+    resultModal.classList.toggle('show', show);
+  }
+
+  function parseMembersFromTextarea(){
+    const raw = bulkInput.value || '';
+    const lines = raw.split(/\r\n|\n|\r/).map(s => s.trim()).filter(Boolean);
+    return uniq(lines);
+  }
+
+  function updateCount(){
+    countEl.textContent = state.members.length;
+    // エラーメッセージをクリア
+    errorMsg.classList.remove('show');
+    errorMsg.textContent = '';
+  }
+
+  function resetRun(){
+    state.winners = [];
+    state.pendingWinners = [];
+    state.revealed = false;
+    state.showWinnersOnBoard = false;
+    setWinnersUI([]);
+    showCenterReveal(false);
+    showModal(false);
+    renderBoard(); // clear any highlight
+  }
+
+  // ===== screen switching =====
+  function enterLottery(){
+    state.members = parseMembersFromTextarea();
+    updateCount();
+    if(state.members.length === 0) return;
+
+    // 当選数を取得
+    const inputVal = parseInt(winCountInput.value, 10);
+    WINNERS_N = isNaN(inputVal) || inputVal < 1 ? 1 : inputVal;
+
+    // 参加者数が当選数より少ない場合はエラー
+    if(state.members.length < WINNERS_N){
+      errorMsg.textContent = `参加人数が少なすぎます。（参加者 ${state.members.length} 名 < 当選 ${WINNERS_N} 名）`;
+      errorMsg.classList.add('show');
+      return;
+    }
+
+    // エラーをクリア
+    errorMsg.classList.remove('show');
+    errorMsg.textContent = '';
+
+    // Switch UI
+    inputScreen.style.display = 'none';
+    lotteryScreen.classList.add('show');
+    lotteryScreen.setAttribute('aria-hidden', 'false');
+    metaTitle.textContent = `あみだくじ（参加者 ${state.members.length} 名 / 当選 ${WINNERS_N} 名）`;
+
+    resetRun();
+    rebuildBoard();
+
+    // start at left
+    stageWrap.scrollLeft = 0;
+  }
+
+  function backToInput(){
+    lotteryScreen.classList.remove('show');
+    lotteryScreen.setAttribute('aria-hidden', 'true');
+    inputScreen.style.display = 'flex';
+    showModal(false);
+    showCenterReveal(false);
+    setOverlay('', false);
+  }
+
+  // ===== geometry & generation =====
+  function canvasSize(){
+    const n = Math.max(1, state.members.length);
+    const h = topPad * 2 + n * state.laneH;
+    const w = Math.max(minW, leftPad + rightPad + cols * stepX);
+    cv.width = Math.floor(w * devicePixelRatio);
+    cv.height = Math.floor(h * devicePixelRatio);
+    cv.style.width = w + 'px';
+    cv.style.height = h + 'px';
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  }
+
+  function buildLanes(){
+    const n = Math.max(1, state.members.length);
+    state.lanes = Array.from({length:n}, (_,i) => topPad + i * state.laneH + state.laneH/2);
+  }
+
+  function buildConnectors(){
+    const n = state.members.length;
+    state.connectors = [];
+    if(n < 2) return;
+
+    const xs = [];
+    for(let c=1;c<cols;c++) xs.push(leftPad + c * stepX);
+
+    xs.forEach(x => {
+      let last = -999;
+      for(let i=0;i<n-1;i++){
+        if(i - last <= barMinGap) continue;
+        if(Math.random() < barChance){
+          state.connectors.push({x, i});
+          last = i;
+          i++;
+        }
+      }
+    });
+
+    if(state.connectors.length === 0){
+      const x = xs[Math.floor(xs.length/2)] || (leftPad + stepX);
+      const i = Math.floor((n-1)/2);
+      state.connectors.push({x, i: clamp(i,0,n-2)});
+    }
+  }
+
+  function rebuildBoard(){
+    canvasSize();
+    buildLanes();
+    buildConnectors();
+    renderBoard();
+  }
+
+  // ===== rendering =====
+  function drawText(text, x, y, align='left', bold=false, color='rgba(230,238,252,.95)'){
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'middle';
+    ctx.font = `${bold ? 800 : 650} 22px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderBoard(highlightPath=null){
+    const w = parseFloat(cv.style.width);
+    const h = parseFloat(cv.style.height);
+    ctx.clearRect(0,0,w,h);
+
+    const winnersSet = state.showWinnersOnBoard ? new Set(state.winners) : null;
+
+    // lanes
+    ctx.save();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(58,75,114,.65)';
+    state.lanes.forEach((y,i) => {
+      ctx.beginPath();
+      ctx.moveTo(leftPad, y);
+      ctx.lineTo(w - rightPad, y);
+      ctx.stroke();
+
+      const name = state.members[i] ?? '(no member)';
+      drawText(name, leftPad - 10, y, 'right', true, 'rgba(230,238,252,.92)');
+
+      const isWin = winnersSet && winnersSet.has(name);
+      drawText(isWin ? '★ WIN' : '→', w - rightPad + 18, y, 'left', true,
+        isWin ? 'rgba(255,209,102,.95)' : 'rgba(159,178,216,.9)'
+      );
+    });
+    ctx.restore();
+
+    // connectors
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(124,196,255,.40)';
+    state.connectors.forEach(({x,i}) => {
+      const y1 = state.lanes[i];
+      const y2 = state.lanes[i+1];
+      ctx.beginPath();
+      ctx.moveTo(x, y1);
+      ctx.lineTo(x, y2);
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // highlight path
+    if(highlightPath){
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(255,209,102,.95)';
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      const pts = highlightPath.points;
+      if(pts.length){
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      const p = highlightPath.cursor;
+      if(p){
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,209,102,.95)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+
+  // ===== mapping =====
+  function computePath(startI){
+    const w = parseFloat(cv.style.width);
+    const startX = leftPad;
+    const endX = w - rightPad;
+
+    const byX = new Map();
+    state.connectors.forEach(c => {
+      if(!byX.has(c.x)) byX.set(c.x, []);
+      byX.get(c.x).push(c);
+    });
+    for(const arr of byX.values()) arr.sort((a,b) => a.i - b.i);
+    const xs = Array.from(byX.keys()).sort((a,b)=>a-b);
+
+    let i = startI;
+    let y = state.lanes[i];
+    const points = [{x:startX, y}];
+
+    for(const x of xs){
+      points.push({x, y});
+
+      const arr = byX.get(x);
+      let moved = false;
+
+      const down = arr.find(c => c.i === i);
+      if(down){
+        points.push({x, y: state.lanes[i+1]});
+        i = i+1;
+        y = state.lanes[i];
+        moved = true;
+      } else {
+        const up = arr.find(c => c.i === i-1);
+        if(up){
+          points.push({x, y: state.lanes[i-1]});
+          i = i-1;
+          y = state.lanes[i];
+          moved = true;
+        }
+      }
+      if(moved) points.push({x, y});
+    }
+    points.push({x:endX, y});
+    return {endIndex: i, points};
+  }
+
+  // ===== animation =====
+  function easeInOut(t){
+    return t<.5 ? 2*t*t : 1- Math.pow(-2*t+2,2)/2;
+  }
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+  function animateMs(ms, fn){
+    return new Promise(resolve => {
+      const start = performance.now();
+      const tick = (now) => {
+        const t = clamp((now-start)/ms, 0, 1);
+        fn(t);
+        if(t < 1) requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+  }
+
+  async function autoPreviewScroll(){
+    const maxScroll = stageWrap.scrollWidth - stageWrap.clientWidth;
+    if(maxScroll <= 2) return;
+
+    setOverlay('全体を表示中…', true);
+    stageWrap.scrollLeft = 0;
+    await sleep(120);
+
+    await animateMs(scrollPreviewMs * 0.55, (t) => {
+      stageWrap.scrollLeft = maxScroll * easeInOut(t);
+    });
+
+    await sleep(120);
+
+    await animateMs(scrollPreviewMs * 0.45, (t) => {
+      stageWrap.scrollLeft = maxScroll * (1 - easeInOut(t));
+      stageWrap.scrollLeft = clamp(stageWrap.scrollLeft, 0, maxScroll);
+    });
+
+    setOverlay('', false);
+  }
+
+  // IMPORTANT: canvasX -> scroll contentX
+  function keepCursorVisible(canvasX){
+    const contentX = cv.offsetLeft + canvasX;
+    const viewL = stageWrap.scrollLeft;
+    const viewR = viewL + stageWrap.clientWidth;
+    const margin = scrollEdgePad;
+
+    if(contentX < viewL + margin){
+      stageWrap.scrollLeft = clamp(contentX - margin, 0, stageWrap.scrollWidth - stageWrap.clientWidth);
+    } else if(contentX > viewR - margin){
+      stageWrap.scrollLeft = clamp(contentX - stageWrap.clientWidth + margin, 0, stageWrap.scrollWidth - stageWrap.clientWidth);
+    }
+  }
+
+  async function animatePath(path, ms=950){
+    return new Promise((resolve) => {
+      const pts = path.points;
+      const segs = [];
+      let total = 0;
+      for(let i=0;i<pts.length-1;i++){
+        const a = pts[i], b = pts[i+1];
+        const len = Math.hypot(b.x-a.x, b.y-a.y);
+        segs.push({a,b,len});
+        total += len;
+      }
+
+      const start = performance.now();
+
+      function step(now){
+        const t = clamp((now - start)/ms, 0, 1);
+        const tt = easeInOut(t);
+        let d = total * tt;
+
+        let cursor = pts[0];
+        const drawn = [pts[0]];
+
+        for(const s of segs){
+          if(d <= s.len){
+            const r = s.len === 0 ? 0 : d / s.len;
+            cursor = {x: s.a.x + (s.b.x-s.a.x)*r, y: s.a.y + (s.b.y-s.a.y)*r};
+            drawn.push(cursor);
+            break;
+          } else {
+            drawn.push(s.b);
+            d -= s.len;
+          }
+        }
+
+        keepCursorVisible(cursor.x);
+        renderBoard({points: drawn, cursor});
+
+        if(t < 1) requestAnimationFrame(step);
+        else resolve(true);
+      }
+
+      requestAnimationFrame(step);
+    });
+  }
+
+  // ===== sound =====
+  function playFanfare(){
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if(!AudioContext) return;
+
+    const ac = new AudioContext();
+    const now = ac.currentTime;
+
+    const master = ac.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+    master.connect(ac.destination);
+
+    const notes = [
+      {t:0.00, f:523.25, d:0.16},
+      {t:0.18, f:659.25, d:0.16},
+      {t:0.36, f:783.99, d:0.18},
+      {t:0.58, f:1046.50, d:0.35},
+    ];
+
+    for(const n of notes){
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(n.f, now + n.t);
+
+      g.gain.setValueAtTime(0.0001, now + n.t);
+      g.gain.exponentialRampToValueAtTime(0.35, now + n.t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + n.t + n.d);
+
+      o.connect(g); g.connect(master);
+      o.start(now + n.t);
+      o.stop(now + n.t + n.d + 0.03);
+    }
+    setTimeout(() => ac.close().catch(()=>{}), 1600);
+  }
+
+  // ===== winners UI =====
+  function setWinnersUI(winners){
+    winnersEl.innerHTML = '';
+    for(const w of winners){
+      const d = document.createElement('div');
+      d.className = 'winner';
+      d.textContent = w;
+      winnersEl.appendChild(d);
+    }
+  }
+
+  function pickWinners(){
+    const m = [...state.members];
+    for(let i=m.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [m[i],m[j]] = [m[j],m[i]];
+    }
+    return m.slice(0, Math.min(WINNERS_N, m.length));
+  }
+
+  // ===== main actions =====
+  async function startLottery(){
+    if(state.running) return;
+    if(state.members.length === 0) return;
+
+    resetRun();
+
+    state.running = true;
+    startBtn.disabled = true;
+    shuffleBtn.disabled = true;
+    backBtn.disabled = true;
+
+    // 内部で当選者確定（見せない）
+    state.pendingWinners = pickWinners();
+
+    rebuildBoard();
+    await autoPreviewScroll();
+
+    setOverlay('抽選中…', true);
+
+    // 当選者それぞれの開始位置（インデックス）を取得
+    const startIndices = state.pendingWinners.map(name => state.members.indexOf(name));
+
+    // 各当選者の線を順番に描画
+    for(let k=0;k<startIndices.length;k++){
+      const startI = startIndices[k];
+      if(startI === -1) continue; // 念のため
+      const path = computePath(startI);
+      await animatePath(path, 950);
+      // 黄色線が次に残らないよう、少し間を置いて消す
+      renderBoard();
+      await sleep(140);
+    }
+
+    // 演出が終わったら黄色線は消して通常表示に戻す
+    setOverlay('', false);
+    renderBoard();
+
+    state.running = false;
+    startBtn.disabled = false;
+    shuffleBtn.disabled = false;
+    backBtn.disabled = false;
+
+    // 中央に結果発表
+    showCenterReveal(true);
+    setOverlay('準備OK：結果発表を押してください', true);
+    setTimeout(()=> setOverlay('', false), 900);
+  }
+
+  function revealResults(){
+    if(state.revealed) return;
+    if(state.pendingWinners.length === 0) return;
+
+    state.winners = [...state.pendingWinners];
+    state.pendingWinners = [];
+    state.revealed = true;
+
+    // 盤面の★を表示し、結果モーダルを出す
+    state.showWinnersOnBoard = true;
+    renderBoard();
+    setWinnersUI(state.winners);
+    showCenterReveal(false);
+    showModal(true);
+    playFanfare();
+  }
+
+  // ===== events =====
+  toLotteryBtn.addEventListener('click', enterLottery);
+  clearBtn.addEventListener('click', () => { 
+    bulkInput.value = ''; 
+    state.members = []; 
+    updateCount(); 
+  });
+
+  // 入力変更時にもエラーをクリア
+  bulkInput.addEventListener('input', () => {
+    state.members = parseMembersFromTextarea();
+    updateCount();
+  });
+  winCountInput.addEventListener('input', () => {
+    errorMsg.classList.remove('show');
+    errorMsg.textContent = '';
+  });
+
+  backBtn.addEventListener('click', backToInput);
+
+  shuffleBtn.addEventListener('click', () => {
+    if(state.running) return;
+    resetRun();
+    rebuildBoard();
+  });
+
+  startBtn.addEventListener('click', startLottery);
+  revealBtn.addEventListener('click', revealResults);
+
+  closeModalBtn.addEventListener('click', () => showModal(false));
+  resultModal.addEventListener('click', (e) => {
+    if(e.target === resultModal) showModal(false);
+  });
+
+  window.addEventListener('resize', () => {
+    if(!lotteryScreen.classList.contains('show')) return;
+    rebuildBoard();
+  });
+
+  // init count
+  updateCount();
+})();
+</script>
+</body>
+</html>

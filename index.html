@@ -1126,21 +1126,21 @@ maeda-kazutoshi"></textarea>
       ctx.shadowBlur = 0;
 
       const name = state.members[i] ?? '(no member)';
-      drawText(name, leftPad - 10, y, 'right', true, 'rgba(230,238,252,.92)');
-
       const isWin = winnersSet && winnersSet.has(name);
       if (isWin) {
-        // Draw pulsing WIN text
+        // Draw winner name with star prefix and gold color
         const time = performance.now() / 1000;
         const glowIntensity = 6 + Math.sin(time * 3) * 4;
         ctx.save();
         ctx.shadowBlur = glowIntensity;
         ctx.shadowColor = 'rgba(255,209,102,.8)';
-        drawText('\u2605 WIN', w - rightPad + 18, y, 'left', true, 'rgba(255,209,102,.95)');
+        drawText('\u2605 ' + name, leftPad - 10, y, 'right', true, 'rgba(255,209,102,.95)');
         ctx.restore();
       } else {
-        drawText('\u2192', w - rightPad + 18, y, 'left', true, 'rgba(159,178,216,.9)');
+        drawText(name, leftPad - 10, y, 'right', true, 'rgba(230,238,252,.92)');
       }
+
+      drawText('\u2192', w - rightPad + 18, y, 'left', true, 'rgba(159,178,216,.9)');
     });
     ctx.restore();
 

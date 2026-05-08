@@ -507,6 +507,139 @@
       box-shadow: 0 0 15px rgba(255,209,102,.1);
       text-shadow: 0 0 8px rgba(255,209,102,.3);
     }
+
+    /* ===== History Modal ===== */
+    .historyModal{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+      background: rgba(0,0,0,.5);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .historyModal.show{ display:flex; }
+    .historyModalCard{
+      width: min(640px, 94vw);
+      max-height: 85vh;
+      border-radius: 18px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 18px 55px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+      padding: 20px;
+      display:flex;
+      flex-direction:column;
+      animation: modalIn .35s var(--timing-decel) forwards;
+    }
+    .historyModalCard h2{
+      margin:0 0 14px 0;
+      font-size: 20px;
+      letter-spacing:.02em;
+      background: linear-gradient(90deg, var(--gradient-1), var(--gradient-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .historyList{
+      flex:1;
+      overflow-y:auto;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding-right:4px;
+    }
+    .historyList::-webkit-scrollbar{ width:6px; }
+    .historyList::-webkit-scrollbar-track{ background:transparent; }
+    .historyList::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:3px; }
+    .historyEntry{
+      padding:14px 16px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+      transition: background .2s ease, border-color .2s ease;
+    }
+    .historyEntry:hover{
+      background: rgba(255,255,255,.07);
+      border-color: rgba(124,196,255,.25);
+    }
+    .historyMeta{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:8px;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .historyDate{
+      font-size:12px;
+      color: var(--muted);
+      font-weight:600;
+    }
+    .historyStats{
+      display:flex;
+      gap:8px;
+      font-size:11px;
+    }
+    .historyStats span{
+      padding:3px 8px;
+      border-radius:999px;
+      background:rgba(124,196,255,.1);
+      color: var(--accent);
+      border:1px solid rgba(124,196,255,.2);
+    }
+    .historyWinners{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-top:6px;
+    }
+    .historyWinners span{
+      padding:4px 10px;
+      border-radius:8px;
+      background:rgba(255,209,102,.08);
+      border:1px solid rgba(255,209,102,.2);
+      color: var(--text);
+      font-size:12px;
+      font-weight:700;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .historyDeleteBtn{
+      appearance:none;
+      border:0;
+      cursor:pointer;
+      padding:4px 10px;
+      border-radius:8px;
+      background:rgba(255,107,107,.1);
+      border:1px solid rgba(255,107,107,.25);
+      color:#ff6b6b;
+      font-size:11px;
+      font-weight:700;
+      transition: background .2s ease, transform .15s var(--timing-bounce);
+    }
+    .historyDeleteBtn:hover{
+      background:rgba(255,107,107,.2);
+      transform:scale(1.05);
+    }
+    .historyActions{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:14px;
+      padding-top:12px;
+      border-top:1px solid rgba(255,255,255,.08);
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .historyEmpty{
+      text-align:center;
+      color: var(--muted);
+      font-size:13px;
+      padding:30px 0;
+    }
   </style>
 </head>
 <body>
@@ -528,6 +661,7 @@ maeda-kazutoshi"></textarea>
     <div class="row">
       <button class="btn" id="toLotteryBtn">抽選へ</button>
       <button class="btn secondary" id="clearBtn">クリア</button>
+      <button class="btn secondary" id="historyBtn">履歴</button>
       <span class="pill" id="countPill"><span id="count">0</span> 名</span>
       <span class="pill">当選: <input type="number" id="winCount" value="5" min="1" step="1"> 名</span>
     </div>
@@ -570,6 +704,18 @@ maeda-kazutoshi"></textarea>
   </div>
   <div class="screenFlash" id="screenFlash"></div>
 </section>
+
+<!-- ===== History Modal ===== -->
+<div class="historyModal" id="historyModal">
+  <div class="historyModalCard">
+    <h2>抽選履歴</h2>
+    <div class="historyList" id="historyList"></div>
+    <div class="historyActions">
+      <button class="btn secondary historyDeleteBtn" id="clearAllHistoryBtn" style="padding:8px 14px;font-size:12px;border-radius:10px;">全て削除</button>
+      <button class="btn secondary" id="closeHistoryBtn">閉じる</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -1374,6 +1520,9 @@ maeda-kazutoshi"></textarea>
       showModal(true);
       playFanfare();
     }, 350);
+
+    // Save results to history
+    addHistoryEntry(state.winners, state.members.length, WINNERS_N);
   }
 
   // ===== events =====
@@ -1413,6 +1562,136 @@ maeda-kazutoshi"></textarea>
     if(!lotteryScreen.classList.contains('show')) return;
     rebuildBoard();
     initAmbient();
+  });
+
+  // ===== History (localStorage) =====
+  const HISTORY_KEY = 'amida_kuji_history';
+  const historyBtn = document.getElementById('historyBtn');
+  const historyModal = document.getElementById('historyModal');
+  const historyList = document.getElementById('historyList');
+  const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+  const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
+
+  function loadHistory() {
+    try {
+      const data = localStorage.getItem(HISTORY_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveHistory(history) {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } catch (e) {
+      // localStorage may be full or unavailable
+    }
+  }
+
+  function addHistoryEntry(winners, membersCount, winnersCount) {
+    const history = loadHistory();
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      date: new Date().toISOString(),
+      membersCount: membersCount,
+      winnersCount: winnersCount,
+      winners: winners
+    };
+    history.unshift(entry);
+    // Keep max 50 entries
+    if (history.length > 50) history.length = 50;
+    saveHistory(history);
+  }
+
+  function deleteHistoryEntry(id) {
+    const history = loadHistory().filter(e => e.id !== id);
+    saveHistory(history);
+    renderHistory();
+  }
+
+  function clearAllHistory() {
+    saveHistory([]);
+    renderHistory();
+  }
+
+  function formatDate(isoStr) {
+    const d = new Date(isoStr);
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${y}/${mo}/${day} ${h}:${mi}`;
+  }
+
+  function renderHistory() {
+    const history = loadHistory();
+    historyList.innerHTML = '';
+
+    if (history.length === 0) {
+      historyList.innerHTML = '<div class="historyEmpty">履歴がありません</div>';
+      clearAllHistoryBtn.style.display = 'none';
+      return;
+    }
+
+    clearAllHistoryBtn.style.display = '';
+
+    history.forEach(entry => {
+      const el = document.createElement('div');
+      el.className = 'historyEntry';
+
+      const meta = document.createElement('div');
+      meta.className = 'historyMeta';
+
+      const dateEl = document.createElement('span');
+      dateEl.className = 'historyDate';
+      dateEl.textContent = formatDate(entry.date);
+
+      const stats = document.createElement('div');
+      stats.className = 'historyStats';
+      stats.innerHTML = `<span>参加者 ${entry.membersCount} 名</span><span>当選 ${entry.winnersCount} 名</span>`;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'historyDeleteBtn';
+      deleteBtn.textContent = '削除';
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteHistoryEntry(entry.id);
+      });
+
+      meta.appendChild(dateEl);
+      meta.appendChild(stats);
+      meta.appendChild(deleteBtn);
+
+      const winnersDiv = document.createElement('div');
+      winnersDiv.className = 'historyWinners';
+      entry.winners.forEach(name => {
+        const s = document.createElement('span');
+        s.textContent = name;
+        winnersDiv.appendChild(s);
+      });
+
+      el.appendChild(meta);
+      el.appendChild(winnersDiv);
+      historyList.appendChild(el);
+    });
+  }
+
+  function showHistoryModal(show) {
+    historyModal.classList.toggle('show', show);
+    if (show) renderHistory();
+  }
+
+  historyBtn.addEventListener('click', () => showHistoryModal(true));
+  closeHistoryBtn.addEventListener('click', () => showHistoryModal(false));
+  clearAllHistoryBtn.addEventListener('click', () => {
+    if (confirm('全ての履歴を削除しますか？')) {
+      clearAllHistory();
+    }
+  });
+  historyModal.addEventListener('click', (e) => {
+    if (e.target === historyModal) showHistoryModal(false);
   });
 
   // init count

@@ -438,6 +438,19 @@
       animation: flashOverlay .4s ease-out forwards;
     }
 
+    /* Accessibility: reduce motion for photosensitive users */
+    @media (prefers-reduced-motion: reduce) {
+      .screenFlash.active {
+        display: none;
+        animation: none;
+      }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
     /* results modal */
     .modal{
       position:absolute;
@@ -539,6 +552,7 @@ maeda-kazutoshi"></textarea>
   <div class="stageWrap" id="stageWrap">
     <div class="stage">
       <canvas id="cv"></canvas>
+      <canvas id="particleCv" style="position:absolute;top:14px;left:14px;pointer-events:none;z-index:2;"></canvas>
       <div class="overlay" id="overlay"><div class="msg" id="overlayMsg">準備中…</div></div>
       <div class="centerAction hidden" id="centerAction">
         <button class="btn success" id="revealBtn">結果発表</button>
@@ -607,6 +621,7 @@ maeda-kazutoshi"></textarea>
       for (const p of this.particles) p.draw(ctx);
     }
     spawnTrail(x, y) {
+      if (this.particles.length >= 200) return;
       const colors = ['rgba(255,209,102,1)', 'rgba(255,180,50,1)', 'rgba(255,230,150,1)'];
       for (let i = 0; i < 2; i++) {
         this.add(new Particle(x, y, {
@@ -674,6 +689,7 @@ maeda-kazutoshi"></textarea>
   const particleSystem = new ParticleSystem();
   let ambientParticles = [];
   let ambientRunning = false;
+  let ambientRafId = null;
 
   // ===== state =====
   const state = {
@@ -715,6 +731,8 @@ maeda-kazutoshi"></textarea>
   const screenFlash = document.getElementById('screenFlash');
   const ambientCv = document.getElementById('ambientCv');
   const ambientCtx = ambientCv.getContext('2d');
+  const particleCv = document.getElementById('particleCv');
+  const particleCtx = particleCv.getContext('2d');
 
   // ===== config =====
   let WINNERS_N = 5;
@@ -799,7 +817,7 @@ maeda-kazutoshi"></textarea>
       p.update();
       p.draw(ambientCtx);
     }
-    requestAnimationFrame(runAmbient);
+    ambientRafId = requestAnimationFrame(runAmbient);
   }
 
   function startAmbient() {
@@ -810,6 +828,10 @@ maeda-kazutoshi"></textarea>
   }
   function stopAmbient() {
     ambientRunning = false;
+    if (ambientRafId !== null) {
+      cancelAnimationFrame(ambientRafId);
+      ambientRafId = null;
+    }
   }
 
   // ===== screen switching =====
@@ -832,7 +854,11 @@ maeda-kazutoshi"></textarea>
 
     // Animated transition
     inputScreen.classList.add('hiding');
-    setTimeout(() => {
+    let transitionHandled = false;
+    function onTransitionDone() {
+      if (transitionHandled) return;
+      transitionHandled = true;
+      inputScreen.removeEventListener('transitionend', onTransitionDone);
       inputScreen.style.display = 'none';
       inputScreen.classList.remove('hiding');
       lotteryScreen.classList.add('entering');
@@ -847,7 +873,10 @@ maeda-kazutoshi"></textarea>
       rebuildBoard();
       stageWrap.scrollLeft = 0;
       startAmbient();
-    }, 280);
+    }
+    inputScreen.addEventListener('transitionend', onTransitionDone, { once: true });
+    // Fallback for cases where transitionend may not fire (e.g., reduced-motion)
+    setTimeout(onTransitionDone, 400);
   }
 
   function backToInput(){
@@ -875,6 +904,12 @@ maeda-kazutoshi"></textarea>
     cv.style.width = w + 'px';
     cv.style.height = h + 'px';
     ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    // Size particle overlay canvas to match
+    particleCv.width = Math.floor(w * devicePixelRatio);
+    particleCv.height = Math.floor(h * devicePixelRatio);
+    particleCv.style.width = w + 'px';
+    particleCv.style.height = h + 'px';
+    particleCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
   }
 
   function buildLanes(){
@@ -1031,8 +1066,11 @@ maeda-kazutoshi"></textarea>
       }
     }
 
-    // Draw particle system on canvas
-    particleSystem.draw(ctx);
+    // Draw particle system on overlay canvas
+    const pw = parseFloat(particleCv.style.width);
+    const ph = parseFloat(particleCv.style.height);
+    particleCtx.clearRect(0, 0, pw, ph);
+    particleSystem.draw(particleCtx);
   }
 
   // ===== mapping =====
@@ -1313,11 +1351,14 @@ maeda-kazutoshi"></textarea>
     const cvH = parseFloat(cv.style.height);
     particleSystem.spawnExplosion(cvW / 2, cvH / 2, 80);
 
-    // Animate particles for a bit
+    // Animate particles on overlay canvas only (avoids full board redraw)
     let frames = 0;
     function particleBurst() {
       particleSystem.update();
-      renderBoard();
+      const pw = parseFloat(particleCv.style.width);
+      const ph = parseFloat(particleCv.style.height);
+      particleCtx.clearRect(0, 0, pw, ph);
+      particleSystem.draw(particleCtx);
       frames++;
       if (frames < 60) requestAnimationFrame(particleBurst);
     }

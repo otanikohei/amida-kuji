@@ -11,39 +11,187 @@
       --text:#e6eefc;
       --muted:#9fb2d8;
       --accent:#7cc4ff;
+      --accent2:#a78bfa;
       --win:#ffd166;
       --line:#3a4b72;
       --laneH: 28px;
+      --glow-accent: rgba(124,196,255,.45);
+      --glow-win: rgba(255,209,102,.5);
+      --glass-bg: rgba(16,26,47,.55);
+      --glass-border: rgba(255,255,255,.12);
+      --glass-blur: 16px;
+      --gradient-1: #7cc4ff;
+      --gradient-2: #a78bfa;
+      --gradient-3: #ffd166;
+      --timing-smooth: cubic-bezier(.4,0,.2,1);
+      --timing-bounce: cubic-bezier(.68,-.55,.27,1.55);
+      --timing-decel: cubic-bezier(0,0,.2,1);
     }
     *{ box-sizing:border-box; }
+
+    @keyframes pulse{
+      0%,100%{ opacity:1; transform:scale(1); }
+      50%{ opacity:.85; transform:scale(1.03); }
+    }
+    @keyframes shimmer{
+      0%{ background-position:-200% center; }
+      100%{ background-position:200% center; }
+    }
+    @keyframes float{
+      0%,100%{ transform:translateY(0); }
+      50%{ transform:translateY(-8px); }
+    }
+    @keyframes fadeIn{
+      from{ opacity:0; }
+      to{ opacity:1; }
+    }
+    @keyframes slideUp{
+      from{ opacity:0; transform:translateY(16px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+    @keyframes glowPulse{
+      0%,100%{ box-shadow: 0 0 8px var(--glow-accent), 0 0 20px rgba(124,196,255,.15); }
+      50%{ box-shadow: 0 0 16px var(--glow-accent), 0 0 40px rgba(124,196,255,.25); }
+    }
+    @keyframes gradientShift{
+      0%{ background-position:0% 50%; }
+      50%{ background-position:100% 50%; }
+      100%{ background-position:0% 50%; }
+    }
+    @keyframes orbFloat1{
+      0%,100%{ transform:translate(0,0) scale(1); }
+      25%{ transform:translate(30px,-20px) scale(1.1); }
+      50%{ transform:translate(-10px,-35px) scale(0.95); }
+      75%{ transform:translate(-25px,10px) scale(1.05); }
+    }
+    @keyframes orbFloat2{
+      0%,100%{ transform:translate(0,0) scale(1); }
+      25%{ transform:translate(-20px,25px) scale(0.9); }
+      50%{ transform:translate(25px,15px) scale(1.1); }
+      75%{ transform:translate(10px,-20px) scale(0.95); }
+    }
+    @keyframes orbFloat3{
+      0%,100%{ transform:translate(0,0) scale(1); }
+      33%{ transform:translate(-15px,-30px) scale(1.05); }
+      66%{ transform:translate(20px,10px) scale(0.9); }
+    }
+    @keyframes winPulse{
+      0%,100%{ text-shadow: 0 0 6px rgba(255,209,102,.6); }
+      50%{ text-shadow: 0 0 16px rgba(255,209,102,.9), 0 0 30px rgba(255,209,102,.4); }
+    }
+    @keyframes modalIn{
+      from{ opacity:0; transform:scale(0.9) translateY(10px); }
+      to{ opacity:1; transform:scale(1) translateY(0); }
+    }
+    @keyframes cardStagger{
+      from{ opacity:0; transform:translateY(12px) scale(0.95); }
+      to{ opacity:1; transform:translateY(0) scale(1); }
+    }
+    @keyframes flashOverlay{
+      0%{ opacity:.7; }
+      100%{ opacity:0; }
+    }
+    @keyframes rippleEffect{
+      0%{ transform:scale(0); opacity:.5; }
+      100%{ transform:scale(4); opacity:0; }
+    }
+    @keyframes borderGlow{
+      0%,100%{ border-color: rgba(124,196,255,.3); }
+      50%{ border-color: rgba(124,196,255,.6); }
+    }
+
     body{
       margin:0;
       font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
       background: linear-gradient(180deg, #060b16 0%, var(--bg) 60%, #060b16 100%);
       color: var(--text);
+      overflow-x: hidden;
     }
+
+    /* Animated background */
+    .bg-orbs{
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:0;
+      overflow:hidden;
+    }
+    .bg-orbs .orb{
+      position:absolute;
+      border-radius:50%;
+      filter:blur(60px);
+      opacity:.15;
+    }
+    .bg-orbs .orb:nth-child(1){
+      width:300px; height:300px;
+      background: var(--gradient-1);
+      top:20%; left:10%;
+      animation: orbFloat1 18s ease-in-out infinite;
+    }
+    .bg-orbs .orb:nth-child(2){
+      width:250px; height:250px;
+      background: var(--gradient-2);
+      top:60%; right:15%;
+      animation: orbFloat2 22s ease-in-out infinite;
+    }
+    .bg-orbs .orb:nth-child(3){
+      width:200px; height:200px;
+      background: var(--gradient-3);
+      bottom:20%; left:40%;
+      animation: orbFloat3 15s ease-in-out infinite;
+    }
+
     .btn{
       appearance:none; border:0; cursor:pointer;
-      padding:10px 12px; border-radius: 12px;
-      background: rgba(124,196,255,.15);
+      padding:10px 14px; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(124,196,255,.18), rgba(167,139,250,.12));
       color: var(--text);
       border:1px solid rgba(124,196,255,.35);
       font-weight: 800;
-      transition: transform .05s ease, background .15s ease, opacity .15s ease;
+      transition: transform .15s var(--timing-bounce), background .2s ease, opacity .15s ease, box-shadow .25s ease;
       user-select:none;
+      position:relative;
+      overflow:hidden;
     }
-    .btn:active{ transform: translateY(1px); }
+    .btn::after{
+      content:'';
+      position:absolute;
+      inset:0;
+      background: radial-gradient(circle, rgba(255,255,255,.3) 0%, transparent 70%);
+      opacity:0;
+      transform:scale(0);
+      transition: none;
+      border-radius: inherit;
+      pointer-events:none;
+    }
+    .btn:active::after{
+      animation: rippleEffect .4s ease-out forwards;
+    }
+    .btn:hover:not(:disabled){
+      transform: scale(1.05);
+      box-shadow: 0 0 18px var(--glow-accent), 0 4px 20px rgba(0,0,0,.3);
+      background: linear-gradient(135deg, rgba(124,196,255,.28), rgba(167,139,250,.2));
+    }
+    .btn:active:not(:disabled){ transform: scale(0.97); }
     .btn.secondary{
       background: rgba(255,255,255,.06);
       border:1px solid rgba(255,255,255,.12);
       color: var(--muted);
       font-weight: 750;
     }
-    .btn.success{
-      background: rgba(255,209,102,.14);
-      border:1px solid rgba(255,209,102,.28);
+    .btn.secondary:hover:not(:disabled){
+      background: rgba(255,255,255,.12);
+      box-shadow: 0 0 12px rgba(255,255,255,.1), 0 4px 16px rgba(0,0,0,.2);
     }
-    .btn:disabled{ opacity:.45; cursor:not-allowed; }
+    .btn.success{
+      background: linear-gradient(135deg, rgba(255,209,102,.18), rgba(255,150,50,.12));
+      border:1px solid rgba(255,209,102,.35);
+    }
+    .btn.success:hover:not(:disabled){
+      box-shadow: 0 0 20px var(--glow-win), 0 4px 20px rgba(0,0,0,.3);
+      background: linear-gradient(135deg, rgba(255,209,102,.3), rgba(255,150,50,.2));
+    }
+    .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
 
     /* ===== Input Screen ===== */
     .screen{
@@ -52,14 +200,26 @@
       align-items:center;
       justify-content:center;
       padding: 18px;
+      position:relative;
+      z-index:1;
+      opacity:1;
+      transform: translateY(0);
+      transition: opacity .3s var(--timing-smooth), transform .3s var(--timing-smooth);
+    }
+    .screen.hiding{
+      opacity:0;
+      transform: translateY(-20px);
     }
     .card{
       width: min(860px, 96vw);
-      background: rgba(16,26,47,.85);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:16px;
-      padding:16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border:1px solid var(--glass-border);
+      border-radius:18px;
+      padding:18px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+      animation: fadeIn .5s var(--timing-decel) forwards;
     }
     h1{
       margin: 0 0 10px 0;
@@ -81,6 +241,11 @@
       font-size: 13px;
       line-height: 1.4;
       margin-top: 10px;
+      transition: border-color .3s ease, box-shadow .3s ease;
+    }
+    textarea:focus{
+      border-color: rgba(124,196,255,.5);
+      box-shadow: 0 0 12px rgba(124,196,255,.2), 0 0 30px rgba(124,196,255,.08);
     }
     input[type="number"]{
       width: 80px;
@@ -92,6 +257,11 @@
       outline:none;
       font-size: 13px;
       font-weight: 700;
+      transition: border-color .3s ease, box-shadow .3s ease;
+    }
+    input[type="number"]:focus{
+      border-color: rgba(124,196,255,.5);
+      box-shadow: 0 0 10px rgba(124,196,255,.2);
     }
     .row{
       display:flex;
@@ -107,6 +277,10 @@
       border:1px solid rgba(255,255,255,.10);
       color: var(--muted);
       font-size:12px;
+      transition: background .2s ease, transform .2s var(--timing-bounce);
+    }
+    .pill.updated{
+      animation: pulse .4s ease;
     }
     .error{
       color: #ff6b6b;
@@ -116,6 +290,7 @@
     }
     .error.show{
       display: block;
+      animation: slideUp .3s var(--timing-decel);
     }
 
     /* ===== Lottery Screen (fullscreen) ===== */
@@ -125,8 +300,19 @@
       background: linear-gradient(180deg, #050a14 0%, #091225 55%, #050a14 100%);
       display:none;
       z-index: 10;
+      opacity:0;
+      transition: opacity .3s var(--timing-smooth);
     }
-    .full.show{ display:block; }
+    .full.show{ display:block; opacity:1; }
+    .full.entering{ display:block; opacity:0; }
+
+    /* Ambient particles canvas for lottery screen */
+    .ambientCanvas{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      z-index:0;
+    }
 
     .topbar{
       position:absolute;
@@ -138,7 +324,14 @@
       align-items:center;
       gap: 10px;
       z-index: 20;
-      pointer-events:none; /* allow stage interaction by default */
+      pointer-events:none;
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      padding: 8px 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.04);
     }
     .topbar .group{
       display:flex;
@@ -165,7 +358,8 @@
       position:absolute;
       inset: 0;
       overflow: auto;
-      padding: 56px 12px 12px; /* leave room for topbar */
+      padding: 72px 12px 12px;
+      z-index:1;
     }
     .stage{
       position: relative;
@@ -176,8 +370,9 @@
     canvas{
       display:block;
       border-radius: 14px;
-      background: rgba(6,9,18,.35);
-      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(6,9,18,.45);
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 4px 30px rgba(0,0,0,.2);
     }
 
     .overlay{
@@ -187,20 +382,24 @@
       align-items:center;
       justify-content:center;
       pointer-events:none;
+      z-index:5;
     }
     .overlay .msg{
-      padding:10px 14px;
+      padding:12px 18px;
       border-radius: 999px;
-      background: rgba(0,0,0,.45);
-      border:1px solid rgba(255,255,255,.14);
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border:1px solid var(--glass-border);
       color: var(--muted);
       font-weight: 800;
       letter-spacing: .03em;
       opacity: 0;
-      transform: translateY(8px);
-      transition: opacity .25s ease, transform .25s ease;
+      transform: translateY(12px);
+      transition: opacity .3s var(--timing-decel), transform .3s var(--timing-decel);
       max-width: 92vw;
       text-align:center;
+      text-shadow: 0 0 8px rgba(124,196,255,.3);
     }
     .overlay.show .msg{ opacity: 1; transform: translateY(0); }
 
@@ -216,12 +415,28 @@
     }
     .centerAction .btn{
       pointer-events:auto;
-      padding: 14px 18px;
-      font-size: 16px;
+      padding: 16px 22px;
+      font-size: 17px;
       border-radius: 16px;
-      box-shadow: 0 18px 45px rgba(0,0,0,.35);
+      box-shadow: 0 18px 45px rgba(0,0,0,.35), 0 0 25px var(--glow-win);
+      animation: glowPulse 2s ease-in-out infinite;
     }
     .centerAction.hidden{ display:none; }
+
+    /* Screen flash for winner reveal */
+    .screenFlash{
+      position:fixed;
+      inset:0;
+      background: rgba(255,255,255,.7);
+      z-index:28;
+      pointer-events:none;
+      opacity:0;
+      display:none;
+    }
+    .screenFlash.active{
+      display:block;
+      animation: flashOverlay .4s ease-out forwards;
+    }
 
     /* results modal */
     .modal{
@@ -231,22 +446,30 @@
       align-items:center;
       justify-content:center;
       z-index: 30;
-      background: rgba(0,0,0,.40);
-      backdrop-filter: blur(6px);
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
     .modal.show{ display:flex; }
     .modalCard{
       width: min(560px, 92vw);
       border-radius: 18px;
-      background: rgba(16,26,47,.92);
-      border: 1px solid rgba(255,255,255,.10);
-      box-shadow: 0 18px 55px rgba(0,0,0,.45);
-      padding: 16px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 18px 55px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+      padding: 18px;
+      animation: modalIn .35s var(--timing-decel) forwards;
     }
     .modalCard h2{
       margin:0 0 10px 0;
       font-size: 24px;
       letter-spacing:.02em;
+      background: linear-gradient(90deg, var(--gradient-3), var(--gradient-1));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     .winners{
       display:flex;
@@ -257,8 +480,8 @@
     .winner{
       padding:14px 18px;
       border-radius: 16px;
-      background: rgba(255,209,102,.12);
-      border:1px solid rgba(255,209,102,.28);
+      background: rgba(255,209,102,.1);
+      border:1px solid rgba(255,209,102,.3);
       color: var(--text);
       font-weight: 900;
       letter-spacing: .02em;
@@ -266,10 +489,20 @@
       font-size: 30px;
       line-height: 1.3;
       word-break: break-all;
+      opacity:0;
+      animation: cardStagger .4s var(--timing-decel) forwards;
+      box-shadow: 0 0 15px rgba(255,209,102,.1);
+      text-shadow: 0 0 8px rgba(255,209,102,.3);
     }
   </style>
 </head>
 <body>
+
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb"></div>
+  <div class="orb"></div>
+  <div class="orb"></div>
+</div>
 
 <!-- ===== Input Screen ===== -->
 <section class="screen" id="inputScreen">
@@ -282,7 +515,7 @@ maeda-kazutoshi"></textarea>
     <div class="row">
       <button class="btn" id="toLotteryBtn">抽選へ</button>
       <button class="btn secondary" id="clearBtn">クリア</button>
-      <span class="pill"><span id="count">0</span> 名</span>
+      <span class="pill" id="countPill"><span id="count">0</span> 名</span>
       <span class="pill">当選: <input type="number" id="winCount" value="5" min="1" step="1"> 名</span>
     </div>
     <div class="error" id="errorMsg"></div>
@@ -291,6 +524,7 @@ maeda-kazutoshi"></textarea>
 
 <!-- ===== Lottery Screen (fullscreen) ===== -->
 <section class="full" id="lotteryScreen" aria-hidden="true">
+  <canvas class="ambientCanvas" id="ambientCv"></canvas>
   <div class="topbar">
     <div class="group">
       <button class="btn" id="startBtn">スタート</button>
@@ -320,10 +554,127 @@ maeda-kazutoshi"></textarea>
       </div>
     </div>
   </div>
+  <div class="screenFlash" id="screenFlash"></div>
 </section>
 
 <script>
 (() => {
+  // ===== Particle System =====
+  class Particle {
+    constructor(x, y, opts = {}) {
+      this.x = x;
+      this.y = y;
+      this.vx = opts.vx || (Math.random() - 0.5) * 4;
+      this.vy = opts.vy || (Math.random() - 0.5) * 4;
+      this.life = opts.life || 1;
+      this.maxLife = this.life;
+      this.size = opts.size || 2 + Math.random() * 3;
+      this.color = opts.color || 'rgba(255,209,102,1)';
+      this.gravity = opts.gravity || 0.05;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      this.vy += this.gravity;
+      this.life -= 0.016;
+    }
+    draw(ctx) {
+      if (this.life <= 0) return;
+      const alpha = Math.max(0, this.life / this.maxLife);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size * alpha, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    get dead() { return this.life <= 0; }
+  }
+
+  class ParticleSystem {
+    constructor() {
+      this.particles = [];
+    }
+    add(p) { this.particles.push(p); }
+    update() {
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        this.particles[i].update();
+        if (this.particles[i].dead) this.particles.splice(i, 1);
+      }
+    }
+    draw(ctx) {
+      for (const p of this.particles) p.draw(ctx);
+    }
+    spawnTrail(x, y) {
+      const colors = ['rgba(255,209,102,1)', 'rgba(255,180,50,1)', 'rgba(255,230,150,1)'];
+      for (let i = 0; i < 2; i++) {
+        this.add(new Particle(x, y, {
+          vx: (Math.random() - 0.5) * 2,
+          vy: (Math.random() - 0.5) * 2 - 1,
+          life: 0.4 + Math.random() * 0.3,
+          size: 1.5 + Math.random() * 2,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          gravity: 0.02
+        }));
+      }
+    }
+    spawnExplosion(x, y, count = 60) {
+      const colors = [
+        'rgba(255,209,102,1)', 'rgba(255,150,50,1)',
+        'rgba(255,255,255,1)', 'rgba(124,196,255,1)',
+        'rgba(167,139,250,1)'
+      ];
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 6;
+        this.add(new Particle(x, y, {
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 2,
+          life: 0.8 + Math.random() * 0.8,
+          size: 2 + Math.random() * 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          gravity: 0.08
+        }));
+      }
+    }
+    get count() { return this.particles.length; }
+  }
+
+  // ===== Ambient Particles =====
+  class AmbientParticle {
+    constructor(w, h) {
+      this.x = Math.random() * w;
+      this.y = Math.random() * h;
+      this.size = 1 + Math.random() * 2;
+      this.alpha = 0.1 + Math.random() * 0.3;
+      this.vx = (Math.random() - 0.5) * 0.3;
+      this.vy = -0.2 - Math.random() * 0.3;
+      this.w = w;
+      this.h = h;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.y < -10) { this.y = this.h + 10; this.x = Math.random() * this.w; }
+      if (this.x < -10) this.x = this.w + 10;
+      if (this.x > this.w + 10) this.x = -10;
+    }
+    draw(ctx) {
+      ctx.save();
+      ctx.globalAlpha = this.alpha;
+      ctx.fillStyle = '#7cc4ff';
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  const particleSystem = new ParticleSystem();
+  let ambientParticles = [];
+  let ambientRunning = false;
+
   // ===== state =====
   const state = {
     members: [],
@@ -331,44 +682,39 @@ maeda-kazutoshi"></textarea>
     pendingWinners: [],
     revealed: false,
     showWinnersOnBoard: false,
-
     lanes: [],
     connectors: [],
     running: false,
-
-    // drawing config
     laneH: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--laneH')) || 28,
   };
 
   // ===== elements =====
   const inputScreen = document.getElementById('inputScreen');
   const lotteryScreen = document.getElementById('lotteryScreen');
-
   const bulkInput = document.getElementById('bulkInput');
   const toLotteryBtn = document.getElementById('toLotteryBtn');
   const clearBtn = document.getElementById('clearBtn');
   const countEl = document.getElementById('count');
-
+  const countPill = document.getElementById('countPill');
   const startBtn = document.getElementById('startBtn');
   const shuffleBtn = document.getElementById('shuffleBtn');
   const backBtn = document.getElementById('backBtn');
-
   const stageWrap = document.getElementById('stageWrap');
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
-
   const overlay = document.getElementById('overlay');
   const overlayMsg = document.getElementById('overlayMsg');
-
   const centerAction = document.getElementById('centerAction');
   const revealBtn = document.getElementById('revealBtn');
-
   const resultModal = document.getElementById('resultModal');
   const winnersEl = document.getElementById('winners');
   const closeModalBtn = document.getElementById('closeModalBtn');
   const metaTitle = document.getElementById('metaTitle');
   const winCountInput = document.getElementById('winCount');
   const errorMsg = document.getElementById('errorMsg');
+  const screenFlash = document.getElementById('screenFlash');
+  const ambientCv = document.getElementById('ambientCv');
+  const ambientCtx = ambientCv.getContext('2d');
 
   // ===== config =====
   let WINNERS_N = 5;
@@ -406,8 +752,14 @@ maeda-kazutoshi"></textarea>
   }
 
   function updateCount(){
+    const prev = countEl.textContent;
+    state.members = parseMembersFromTextarea();
     countEl.textContent = state.members.length;
-    // エラーメッセージをクリア
+    if (prev !== String(state.members.length)) {
+      countPill.classList.remove('updated');
+      void countPill.offsetWidth;
+      countPill.classList.add('updated');
+    }
     errorMsg.classList.remove('show');
     errorMsg.textContent = '';
   }
@@ -420,7 +772,44 @@ maeda-kazutoshi"></textarea>
     setWinnersUI([]);
     showCenterReveal(false);
     showModal(false);
-    renderBoard(); // clear any highlight
+    renderBoard();
+  }
+
+  // ===== Ambient particle system =====
+  function initAmbient() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    ambientCv.width = w * devicePixelRatio;
+    ambientCv.height = h * devicePixelRatio;
+    ambientCv.style.width = w + 'px';
+    ambientCv.style.height = h + 'px';
+    ambientCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    ambientParticles = [];
+    for (let i = 0; i < 25; i++) {
+      ambientParticles.push(new AmbientParticle(w, h));
+    }
+  }
+
+  function runAmbient() {
+    if (!ambientRunning) return;
+    const w = parseInt(ambientCv.style.width);
+    const h = parseInt(ambientCv.style.height);
+    ambientCtx.clearRect(0, 0, w, h);
+    for (const p of ambientParticles) {
+      p.update();
+      p.draw(ambientCtx);
+    }
+    requestAnimationFrame(runAmbient);
+  }
+
+  function startAmbient() {
+    if (ambientRunning) return;
+    ambientRunning = true;
+    initAmbient();
+    runAmbient();
+  }
+  function stopAmbient() {
+    ambientRunning = false;
   }
 
   // ===== screen switching =====
@@ -429,38 +818,48 @@ maeda-kazutoshi"></textarea>
     updateCount();
     if(state.members.length === 0) return;
 
-    // 当選数を取得
     const inputVal = parseInt(winCountInput.value, 10);
     WINNERS_N = isNaN(inputVal) || inputVal < 1 ? 1 : inputVal;
 
-    // 参加者数が当選数より少ない場合はエラー
     if(state.members.length < WINNERS_N){
       errorMsg.textContent = `参加人数が少なすぎます。（参加者 ${state.members.length} 名 < 当選 ${WINNERS_N} 名）`;
       errorMsg.classList.add('show');
       return;
     }
 
-    // エラーをクリア
     errorMsg.classList.remove('show');
     errorMsg.textContent = '';
 
-    // Switch UI
-    inputScreen.style.display = 'none';
-    lotteryScreen.classList.add('show');
-    lotteryScreen.setAttribute('aria-hidden', 'false');
-    metaTitle.textContent = `あみだくじ（参加者 ${state.members.length} 名 / 当選 ${WINNERS_N} 名）`;
+    // Animated transition
+    inputScreen.classList.add('hiding');
+    setTimeout(() => {
+      inputScreen.style.display = 'none';
+      inputScreen.classList.remove('hiding');
+      lotteryScreen.classList.add('entering');
+      lotteryScreen.classList.add('show');
+      lotteryScreen.setAttribute('aria-hidden', 'false');
+      // Force reflow then animate in
+      void lotteryScreen.offsetWidth;
+      lotteryScreen.classList.remove('entering');
 
-    resetRun();
-    rebuildBoard();
-
-    // start at left
-    stageWrap.scrollLeft = 0;
+      metaTitle.textContent = `あみだくじ（参加者 ${state.members.length} 名 / 当選 ${WINNERS_N} 名）`;
+      resetRun();
+      rebuildBoard();
+      stageWrap.scrollLeft = 0;
+      startAmbient();
+    }, 280);
   }
 
   function backToInput(){
+    stopAmbient();
     lotteryScreen.classList.remove('show');
     lotteryScreen.setAttribute('aria-hidden', 'true');
     inputScreen.style.display = 'flex';
+    inputScreen.style.opacity = '0';
+    inputScreen.style.transform = 'translateY(20px)';
+    void inputScreen.offsetWidth;
+    inputScreen.style.opacity = '';
+    inputScreen.style.transform = '';
     showModal(false);
     showCenterReveal(false);
     setOverlay('', false);
@@ -487,10 +886,8 @@ maeda-kazutoshi"></textarea>
     const n = state.members.length;
     state.connectors = [];
     if(n < 2) return;
-
     const xs = [];
     for(let c=1;c<cols;c++) xs.push(leftPad + c * stepX);
-
     xs.forEach(x => {
       let last = -999;
       for(let i=0;i<n-1;i++){
@@ -502,7 +899,6 @@ maeda-kazutoshi"></textarea>
         }
       }
     });
-
     if(state.connectors.length === 0){
       const x = xs[Math.floor(xs.length/2)] || (leftPad + stepX);
       const i = Math.floor((n-1)/2);
@@ -535,30 +931,44 @@ maeda-kazutoshi"></textarea>
 
     const winnersSet = state.showWinnersOnBoard ? new Set(state.winners) : null;
 
-    // lanes
+    // lanes with subtle glow
     ctx.save();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(58,75,114,.65)';
     state.lanes.forEach((y,i) => {
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(58,75,114,.55)';
+      ctx.shadowBlur = 3;
+      ctx.shadowColor = 'rgba(124,196,255,.1)';
       ctx.beginPath();
       ctx.moveTo(leftPad, y);
       ctx.lineTo(w - rightPad, y);
       ctx.stroke();
+      ctx.shadowBlur = 0;
 
       const name = state.members[i] ?? '(no member)';
       drawText(name, leftPad - 10, y, 'right', true, 'rgba(230,238,252,.92)');
 
       const isWin = winnersSet && winnersSet.has(name);
-      drawText(isWin ? '★ WIN' : '→', w - rightPad + 18, y, 'left', true,
-        isWin ? 'rgba(255,209,102,.95)' : 'rgba(159,178,216,.9)'
-      );
+      if (isWin) {
+        // Draw pulsing WIN text
+        const time = performance.now() / 1000;
+        const glowIntensity = 6 + Math.sin(time * 3) * 4;
+        ctx.save();
+        ctx.shadowBlur = glowIntensity;
+        ctx.shadowColor = 'rgba(255,209,102,.8)';
+        drawText('\u2605 WIN', w - rightPad + 18, y, 'left', true, 'rgba(255,209,102,.95)');
+        ctx.restore();
+      } else {
+        drawText('\u2192', w - rightPad + 18, y, 'left', true, 'rgba(159,178,216,.9)');
+      }
     });
     ctx.restore();
 
-    // connectors
+    // connectors with glow
     ctx.save();
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgba(124,196,255,.40)';
+    ctx.shadowBlur = 4;
+    ctx.shadowColor = 'rgba(124,196,255,.2)';
     state.connectors.forEach(({x,i}) => {
       const y1 = state.lanes[i];
       const y2 = state.lanes[i+1];
@@ -569,11 +979,13 @@ maeda-kazutoshi"></textarea>
     });
     ctx.restore();
 
-    // highlight path
+    // highlight path with glow
     if(highlightPath){
       ctx.save();
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3.5;
       ctx.strokeStyle = 'rgba(255,209,102,.95)';
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = 'rgba(255,209,102,.7)';
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.beginPath();
@@ -585,16 +997,42 @@ maeda-kazutoshi"></textarea>
       ctx.stroke();
       ctx.restore();
 
+      // Draw trail dots
+      if (highlightPath.trail) {
+        for (const t of highlightPath.trail) {
+          ctx.save();
+          ctx.globalAlpha = t.alpha;
+          ctx.fillStyle = 'rgba(255,209,102,.8)';
+          ctx.shadowBlur = 4;
+          ctx.shadowColor = 'rgba(255,209,102,.5)';
+          ctx.beginPath();
+          ctx.arc(t.x, t.y, t.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // Glowing cursor ball
       const p = highlightPath.cursor;
       if(p){
         ctx.save();
+        ctx.shadowBlur = 16;
+        ctx.shadowColor = 'rgba(255,209,102,.9)';
         ctx.fillStyle = 'rgba(255,209,102,.95)';
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+        ctx.arc(p.x, p.y, 7, 0, Math.PI*2);
+        ctx.fill();
+        // outer glow ring
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 11, 0, Math.PI*2);
         ctx.fill();
         ctx.restore();
       }
     }
+
+    // Draw particle system on canvas
+    particleSystem.draw(ctx);
   }
 
   // ===== mapping =====
@@ -617,10 +1055,8 @@ maeda-kazutoshi"></textarea>
 
     for(const x of xs){
       points.push({x, y});
-
       const arr = byX.get(x);
       let moved = false;
-
       const down = arr.find(c => c.i === i);
       if(down){
         points.push({x, y: state.lanes[i+1]});
@@ -682,7 +1118,6 @@ maeda-kazutoshi"></textarea>
     setOverlay('', false);
   }
 
-  // IMPORTANT: canvasX -> scroll contentX
   function keepCursorVisible(canvasX){
     const contentX = cv.offsetLeft + canvasX;
     const viewL = stageWrap.scrollLeft;
@@ -696,7 +1131,7 @@ maeda-kazutoshi"></textarea>
     }
   }
 
-  async function animatePath(path, ms=950){
+  async function animatePath(path, ms=1200){
     return new Promise((resolve) => {
       const pts = path.points;
       const segs = [];
@@ -708,10 +1143,14 @@ maeda-kazutoshi"></textarea>
         total += len;
       }
 
+      const trail = [];
+      const maxTrail = 12;
+      let lastTrailTime = 0;
       const start = performance.now();
 
       function step(now){
         const t = clamp((now - start)/ms, 0, 1);
+        // Accelerate-decelerate easing
         const tt = easeInOut(t);
         let d = total * tt;
 
@@ -730,8 +1169,24 @@ maeda-kazutoshi"></textarea>
           }
         }
 
+        // Add trail points
+        if (now - lastTrailTime > 30) {
+          trail.push({ x: cursor.x, y: cursor.y, alpha: 0.7, size: 3 });
+          if (trail.length > maxTrail) trail.shift();
+          lastTrailTime = now;
+        }
+        // Fade trail
+        for (const tr of trail) {
+          tr.alpha *= 0.92;
+          tr.size *= 0.97;
+        }
+
+        // Spawn particle trail
+        particleSystem.spawnTrail(cursor.x, cursor.y);
+        particleSystem.update();
+
         keepCursorVisible(cursor.x);
-        renderBoard({points: drawn, cursor});
+        renderBoard({points: drawn, cursor, trail});
 
         if(t < 1) requestAnimationFrame(step);
         else resolve(true);
@@ -767,11 +1222,9 @@ maeda-kazutoshi"></textarea>
       const g = ac.createGain();
       o.type = 'triangle';
       o.frequency.setValueAtTime(n.f, now + n.t);
-
       g.gain.setValueAtTime(0.0001, now + n.t);
       g.gain.exponentialRampToValueAtTime(0.35, now + n.t + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, now + n.t + n.d);
-
       o.connect(g); g.connect(master);
       o.start(now + n.t);
       o.stop(now + n.t + n.d + 0.03);
@@ -782,10 +1235,11 @@ maeda-kazutoshi"></textarea>
   // ===== winners UI =====
   function setWinnersUI(winners){
     winnersEl.innerHTML = '';
-    for(const w of winners){
+    for(let idx = 0; idx < winners.length; idx++){
       const d = document.createElement('div');
       d.className = 'winner';
-      d.textContent = w;
+      d.textContent = winners[idx];
+      d.style.animationDelay = (idx * 100) + 'ms';
       winnersEl.appendChild(d);
     }
   }
@@ -811,7 +1265,6 @@ maeda-kazutoshi"></textarea>
     shuffleBtn.disabled = true;
     backBtn.disabled = true;
 
-    // 内部で当選者確定（見せない）
     state.pendingWinners = pickWinners();
 
     rebuildBoard();
@@ -819,21 +1272,17 @@ maeda-kazutoshi"></textarea>
 
     setOverlay('抽選中…', true);
 
-    // 当選者それぞれの開始位置（インデックス）を取得
     const startIndices = state.pendingWinners.map(name => state.members.indexOf(name));
 
-    // 各当選者の線を順番に描画
     for(let k=0;k<startIndices.length;k++){
       const startI = startIndices[k];
-      if(startI === -1) continue; // 念のため
+      if(startI === -1) continue;
       const path = computePath(startI);
-      await animatePath(path, 950);
-      // 黄色線が次に残らないよう、少し間を置いて消す
+      await animatePath(path, 1200);
       renderBoard();
       await sleep(140);
     }
 
-    // 演出が終わったら黄色線は消して通常表示に戻す
     setOverlay('', false);
     renderBoard();
 
@@ -842,7 +1291,6 @@ maeda-kazutoshi"></textarea>
     shuffleBtn.disabled = false;
     backBtn.disabled = false;
 
-    // 中央に結果発表
     showCenterReveal(true);
     setOverlay('準備OK：結果発表を押してください', true);
     setTimeout(()=> setOverlay('', false), 900);
@@ -856,24 +1304,45 @@ maeda-kazutoshi"></textarea>
     state.pendingWinners = [];
     state.revealed = true;
 
-    // 盤面の★を表示し、結果モーダルを出す
+    // Screen flash effect
+    screenFlash.classList.add('active');
+    setTimeout(() => screenFlash.classList.remove('active'), 450);
+
+    // Particle explosion in center of canvas
+    const cvW = parseFloat(cv.style.width);
+    const cvH = parseFloat(cv.style.height);
+    particleSystem.spawnExplosion(cvW / 2, cvH / 2, 80);
+
+    // Animate particles for a bit
+    let frames = 0;
+    function particleBurst() {
+      particleSystem.update();
+      renderBoard();
+      frames++;
+      if (frames < 60) requestAnimationFrame(particleBurst);
+    }
+    particleBurst();
+
     state.showWinnersOnBoard = true;
     renderBoard();
     setWinnersUI(state.winners);
     showCenterReveal(false);
-    showModal(true);
-    playFanfare();
+
+    // Delay modal slightly for flash + particles to show
+    setTimeout(() => {
+      showModal(true);
+      playFanfare();
+    }, 350);
   }
 
   // ===== events =====
   toLotteryBtn.addEventListener('click', enterLottery);
-  clearBtn.addEventListener('click', () => { 
-    bulkInput.value = ''; 
-    state.members = []; 
-    updateCount(); 
+  clearBtn.addEventListener('click', () => {
+    bulkInput.value = '';
+    state.members = [];
+    updateCount();
   });
 
-  // 入力変更時にもエラーをクリア
   bulkInput.addEventListener('input', () => {
     state.members = parseMembersFromTextarea();
     updateCount();
@@ -902,6 +1371,7 @@ maeda-kazutoshi"></textarea>
   window.addEventListener('resize', () => {
     if(!lotteryScreen.classList.contains('show')) return;
     rebuildBoard();
+    initAmbient();
   });
 
   // init count
